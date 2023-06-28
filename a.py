@@ -1,4 +1,5 @@
 import random
+import csv
 import copy
 
 # Parámetros del algoritmo Tabú
@@ -11,9 +12,20 @@ TIMESLOTS = 8  # Número de franjas horarias
 SLOTS = DAYS * TIMESLOTS
 
 # Restricciones del problema
-professors = ["Profesor1", "Profesor2", "Profesor3"]  # Lista de profesores
-subjects = ["Asignatura1", "Asignatura2", "Asignatura3"]  # Lista de asignaturas
-rooms = ["Aula1", "Aula2", "Aula3"]  # Lista de salones
+professors = []  # Lista de profesores
+subjects = []  # Lista de asignaturas
+rooms = []  # Lista de salones
+
+# Leer datos desde el archivo CSV
+with open('datos.csv', 'r') as file:
+    reader = csv.reader(file)
+    for row in reader:
+        if row[0] == 'Professors':
+            professors = row[1:]
+        elif row[0] == 'Subjects':
+            subjects = row[1:]
+        elif row[0] == 'Rooms':
+            rooms = row[1:]
 
 # Función de generación de horarios aleatorios
 def generate_schedule():
@@ -55,7 +67,6 @@ def evaluate_schedule(schedule):
     
     # Otras restricciones y objetivos pueden implementarse aquí
     return fitness
-
 
 # Función para obtener los movimientos vecinos
 def get_neighborhood(schedule):
