@@ -3,8 +3,8 @@ import csv
 import copy
 
 # Parámetros del algoritmo Tabú
-MAX_ITERATIONS = 100
-TABU_TENURE = 10
+MAX_ITERATIONS = 1000
+TABU_TENURE = 25
 
 # Definir la representación del horario
 DAYS = 5  # Número de días de la semana
@@ -12,14 +12,19 @@ TIMESLOTS = 4  # Número de turnos (cada turno de 6 horas)
 SLOTS = DAYS * TIMESLOTS
 
 # Restricciones del problema
-nurses = []  # Lista de enfermeras
+nurses = []  # Lista de enfermeras y sus características
 
 # Leer datos desde el archivo CSV
 with open('datos.csv', 'r') as file:
-    reader = csv.reader(file)
+    reader = csv.DictReader(file)
     for row in reader:
-        if row[0] == 'Nurses':
-            nurses = row[1:]
+        nurse = {
+            'name': row['Nurses'],
+            'atencion_pacientes': int(row['Atencion Pacientes']),
+            'conocimiento': int(row['Conocimiento']),
+            'disponibilidad_flexibilidad': int(row['Disponibilidad y Flexibilidad'])
+        }
+        nurses.append(nurse)
 
 # Función de generación de horarios aleatorios
 def generate_schedule():
@@ -27,7 +32,7 @@ def generate_schedule():
     for day in range(DAYS):
         for timeslot in range(TIMESLOTS):
             nurse = random.choice(nurses)
-            schedule[day][timeslot] = nurse
+            schedule[day][timeslot] = nurse['name']
     return schedule
 
 # Función de evaluación de horarios
@@ -61,6 +66,13 @@ def get_neighborhood(schedule):
                         neighborhood.append(neighbor)
     return neighborhood
 
+# Función para calcular la prioridad de una enfermera
+def calculate_priority(nurse):
+    atencion_pacientes = nurse['atencion_pacientes']
+    conocimiento = nurse['conocimiento']
+    disponibilidad_flexibilidad = nurse['disponibilidad_flexibilidad']
+    return (atencion_pacientes + conocimiento + disponibilidad_flexibilidad) / 3
+
 # Algoritmo de búsqueda Tabú para asignar turnos a enfermeras
 def tabu_search():
     current_schedule = generate_schedule()
@@ -91,6 +103,9 @@ def tabu_search():
             tabu_list.pop(0)
     
     return best_schedule
+
+# Ordenar las enfermeras por prioridad
+nurses = sorted(nurses, key=calculate_priority, reverse=True)
 
 # Ejemplo de uso
 best_schedule = tabu_search()
