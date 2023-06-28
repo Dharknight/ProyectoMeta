@@ -1,3 +1,5 @@
+#TABU SEARCH
+
 import random
 import csv
 import copy
@@ -7,7 +9,7 @@ MAX_ITERATIONS = 1000
 TABU_TENURE = 25
 
 # Definir la representación del horario
-DAYS = 5  # Número de días de la semana
+DAYS = 7  # Número de días de la semana
 TIMESLOTS = 4  # Número de turnos (cada turno de 6 horas)
 SLOTS = DAYS * TIMESLOTS
 
@@ -29,11 +31,19 @@ with open('datos.csv', 'r') as file:
 # Función de generación de horarios aleatorios
 def generate_schedule():
     schedule = [[None] * TIMESLOTS for _ in range(DAYS)]
+    assigned_nurses = set()
+    nurse_index = 0
+    
     for day in range(DAYS):
         for timeslot in range(TIMESLOTS):
-            nurse = random.choice(nurses)
+            nurse = nurses[nurse_index % len(nurses)]
             schedule[day][timeslot] = nurse['name']
+            assigned_nurses.add(nurse['name'])
+            nurse_index += 1
+    
     return schedule
+
+
 
 # Función de evaluación de horarios
 def evaluate_schedule(schedule):
@@ -71,7 +81,7 @@ def calculate_priority(nurse):
     atencion_pacientes = nurse['atencion_pacientes']
     conocimiento = nurse['conocimiento']
     disponibilidad_flexibilidad = nurse['disponibilidad_flexibilidad']
-    return (atencion_pacientes + conocimiento + disponibilidad_flexibilidad) / 3
+    return (atencion_pacientes + conocimiento + disponibilidad_flexibilidad) #/ 3
 
 # Algoritmo de búsqueda Tabú para asignar turnos a enfermeras
 def tabu_search():
