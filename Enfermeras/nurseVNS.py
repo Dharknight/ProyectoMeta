@@ -1,20 +1,18 @@
-#TABU SEARCH
-
 import random
 import csv
 import copy
 import time
 
-
-# Parámetros del algoritmo Tabú
+# Parámetros del algoritmo VNS
 MAX_ITERATIONS = 2500
-TABU_TENURE = 24
+MAX_NEIGHBORHOODS = 5
 
 # Definir la representación del horario
 DAYS = 31  # Número de días de la semana
 TIMESLOTS = 4  # Número de turnos (cada turno de 6 horas)
 SLOTS = DAYS * TIMESLOTS
-process  = 0
+process = 0
+
 # Restricciones del problema
 nurses = []  # Lista de enfermeras y sus características
 
@@ -45,8 +43,6 @@ def generate_schedule():
     
     return schedule
 
-
-
 # Función de evaluación de horarios
 def evaluate_schedule(schedule):
     fitness = 0
@@ -65,17 +61,18 @@ def evaluate_schedule(schedule):
     # Otras restricciones y objetivos pueden implementarse aquí
     return fitness
 
-# Función para obtener los movimientos vecinos
-def get_neighborhood(schedule):
+# Función para obtener los movimientos vecinos de un vecindario específico
+def get_neighborhood(schedule, neighborhood_size):
     neighborhood = []
-    for day in range(DAYS):
-        for timeslot in range(TIMESLOTS):
-            for new_day in range(DAYS):
-                for new_timeslot in range(TIMESLOTS):
-                    if new_day != day or new_timeslot != timeslot:
-                        neighbor = copy.deepcopy(schedule)
-                        neighbor[day][timeslot], neighbor[new_day][new_timeslot] = neighbor[new_day][new_timeslot], neighbor[day][timeslot]
-                        neighborhood.append(neighbor)
+    for _ in range(neighborhood_size):
+        neighbor = copy.deepcopy(schedule)
+        random_day1 = random.randint(0, DAYS - 1)
+        random_timeslot1 = random.randint(0, TIMESLOTS - 1)
+        random_day2 = random.randint(0, DAYS - 1)
+        random_timeslot2 = random.randint(0, TIMESLOTS - 1)
+        neighbor[random_day1][random_timeslot1], neighbor[random_day2][random_timeslot2] = \
+            neighbor[random_day2][random_timeslot2], neighbor[random_day1][random_timeslot1]
+        neighborhood.append(neighbor)
     return neighborhood
 
 # Función para calcular la prioridad de una enfermera
@@ -85,57 +82,56 @@ def calculate_priority(nurse):
     disponibilidad_flexibilidad = nurse['disponibilidad_flexibilidad']
     return (atencion_pacientes + conocimiento + disponibilidad_flexibilidad) #/ 3
 
-# Algoritmo de búsqueda Tabú para asignar turnos a enfermeras
-def tabu_search():
+# Algoritmo de búsqueda Variable Neighborhood Search (VNS) para asignar turnos a enfermeras
+def variable_neighborhood_search():
     current_schedule = generate_schedule()
     best_schedule = current_schedule
-    tabu_list = []
+    current_fitness = evaluate_schedule(current_schedule)
     
     for _ in range(MAX_ITERATIONS):
-        neighborhood = get_neighborhood(current_schedule)
-        best_neighbor = None
-        best_fitness = float('-inf')
-        global process
-        for neighbor in neighborhood:
-            process = process + 1  # contamos 'nodos'
-            if neighbor not in tabu_list:
+        neighborhood_size = 1
+        while neighborhood_size <= MAX_NEIGHBORHOODS:
+            neighborhood = get_neighborhood(current_schedule, neighborhood_size)
+            best_neighbor = None
+            best_fitness = float('-inf')
+            global process
+            for neighbor in neighborhood:
+                process = process + 1  # contamos 'nodos'
                 fitness = evaluate_schedule(neighbor)
                 if fitness > best_fitness:
                     best_neighbor = neighbor
-                    best_fitness   = fitness
+                    best_fitness = fitness
+            
+            if best_neighbor is not None and best_fitness > current_fitness:
+                current_schedule = best_neighbor
+                current_fitness = best_fitness
+                neighborhood_size = 1
+            else:
+                neighborhood_size += 1
         
-        if best_neighbor is None:
-            break
-        
-        current_schedule = best_neighbor
         if evaluate_schedule(current_schedule) > evaluate_schedule(best_schedule):
             best_schedule = current_schedule
-        
-        tabu_list.append(current_schedule)
-        if len(tabu_list) > TABU_TENURE:
-            tabu_list.pop(0)
     
     return best_schedule
 
 # Ordenar las enfermeras por prioridad
 nurses = sorted(nurses, key=calculate_priority, reverse=True)
 
-#Main
+# Main
 tiempo_inicio = time.time()
-best_schedule = tabu_search()
+best_schedule = variable_neighborhood_search()
 print("Mejor asignación de turnos encontrada:")
 for day in range(DAYS):
     for timeslot in range(TIMESLOTS):
         print(f"Día {day+1}, Turno {timeslot+1}: {best_schedule[day][timeslot]}")
-tiempo_fin = time.time() 
-time = tiempo_fin - tiempo_inicio
+tiempo_fin = time.time()
+elapsed_time = tiempo_fin - tiempo_inicio
 
-if time >= 60:
-    minutos = int(time/60)
-    segundos = time -( minutos * 60)
-    print("Tiempo de Ejecucion: ", minutos , ":",round(segundos,3))
+if elapsed_time >= 60:
+    minutos = int(elapsed_time / 60)
+    segundos = elapsed_time - (minutos * 60)
+    print("Tiempo de Ejecución: ", minutos, ":", round(segundos, 3))
     print("Procesamiento: ", process)
-else: 
-    print("Tiempo de Eejecucion: ", 0 ,":",round(time,3))
+else:
+    print("Tiempo de Ejecución: ", round(elapsed_time, 3))
     print("Procesamiento: ", process)
-

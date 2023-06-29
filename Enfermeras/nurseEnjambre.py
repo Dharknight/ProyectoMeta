@@ -1,3 +1,4 @@
+import time
 import csv
 import copy
 import random
@@ -8,9 +9,9 @@ MAX_ITERATIONS = 100
 COGNITIVE_WEIGHT = 1.0
 SOCIAL_WEIGHT = 2.0
 INERTIA_WEIGHT = 0.8
-
+process = 0 
 # Definir la representación del horario
-DAYS = 7
+DAYS = 14
 TIMESLOTS = 4
 SLOTS = DAYS * TIMESLOTS
 
@@ -91,8 +92,9 @@ def particle_swarm_optimization():
     particles = []
     best_particle = None
     best_fitness = float('-inf')
-    
+    global process
     for _ in range(PARTICLE_COUNT):
+        process = process + 1
         particle = {
             'position': generate_schedule(),
             'velocity': [[0] * TIMESLOTS for _ in range(DAYS)],
@@ -115,6 +117,7 @@ def particle_swarm_optimization():
             best_fitness = float('-inf')
             
             for neighbor in neighborhood:
+                process = process + 1 
                 fitness = evaluate_schedule(neighbor)
                 if fitness > best_fitness:
                     best_neighbor = neighbor
@@ -132,6 +135,7 @@ def particle_swarm_optimization():
         for particle in particles:
             for day in range(DAYS):
                 for timeslot in range(TIMESLOTS):
+                    process = process + 1 
                     inertia_term = INERTIA_WEIGHT * particle['velocity'][day][timeslot]
                     cognitive_term = COGNITIVE_WEIGHT * random.random() * int(particle['best_position'][day][timeslot] != particle['position'][day][timeslot])
                     social_term = SOCIAL_WEIGHT * random.random() * int(best_particle['position'][day][timeslot] != particle['position'][day][timeslot])
@@ -144,7 +148,7 @@ def particle_swarm_optimization():
 # Ordenar las enfermeras por prioridad
 nurses = sorted(nurses, key=calculate_priority, reverse=True)
 
-# Ejemplo de uso
+tiempo_inicio = time.time()
 best_schedule = particle_swarm_optimization()
 print("Mejor asignación de turnos encontrada:")
 for day in range(DAYS):
@@ -152,3 +156,15 @@ for day in range(DAYS):
         nurse_id = inverse_nurse_mapping[best_schedule[day][timeslot]]
         nurse_name = nurse_mapping[nurse_id]
         print(f"Día {day+1}, Turno {timeslot+1}: {nurse_name}")
+tiempo_fin = time.time() 
+time = tiempo_fin - tiempo_inicio
+
+if time >= 60:
+    minutos = time/60
+    segundos = time - minutos * 60
+    print("Tiempo de Ejecucion: ", minutos , ":",round(segundos,3))
+    print("Procesamiento: ", process)
+else: 
+    print("Tiempo de Eejecucion: ", round(time,3))
+    print("Procesamiento:", process)
+
